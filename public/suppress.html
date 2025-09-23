@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2025, Kirahi LLC
+Max Seenisamy kirahi.com
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suppress CAN Attack Data - IDS</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/public/kirahi-logo.png">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    
+    <!-- FontAwesome CSS -->
+    <link rel="stylesheet" href="/assets/fontawesome-free-6.7.2-web/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <img src="/public/kirahi-logo.png" alt="Kirahi Logo" class="me-2" style="width: 48px; height: 48px; object-fit: contain;">
+                <i class="fas fa-ban me-2"></i>
+                Suppress CAN Attack Data
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-shield-alt me-1"></i>Normal CAN Data
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <i class="fas fa-ban me-1"></i>Suppress CAN Attack Data
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Database Connection Status -->
+                <div class="navbar-text me-3">
+                    <span class="badge bg-success" id="databaseInfo">
+                        <i class="fas fa-database me-1"></i>Connected to: <span id="databaseName">Loading...</span>
+                    </span>
+                </div>
+                
+                <!-- Search Form -->
+                <form class="d-flex" id="searchform">
+                    <div class="input-group">
+                        <input class="form-control" type="search" id="searchtext" placeholder="Search attack data..." aria-label="Search">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="btn btn-outline-light" type="button" id="clearSearch" title="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid" style="margin-top: 80px; padding-top: 20px;">
+        <div class="row">
+            <div class="col-12">
+                <!-- Add New Attack Data Button and Label Filter -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Suppress CAN Attack Data
+                    </h4>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-primary" id="exportCsv" title="Export to CSV">
+                            <i class="fas fa-download me-2"></i>Export CSV
+                        </button>
+                        <button class="btn btn-danger" id="addNew">
+                            <i class="fas fa-plus me-2"></i>Add New Attack Pattern
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Label Filter Radio Buttons -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body py-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="me-3 fw-bold">
+                                        <i class="fas fa-filter me-1"></i>Label Filter:
+                                    </span>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="labelFilter" id="labelBoth" value="both" checked>
+                                        <label class="form-check-label" for="labelBoth">
+                                            <i class="fas fa-list me-1"></i>Both (0 & 1)
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="labelFilter" id="label0" value="0">
+                                        <label class="form-check-label" for="label0">
+                                            <i class="fas fa-times-circle me-1 text-danger"></i>Label = 0
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="labelFilter" id="label1" value="1">
+                                        <label class="form-check-label" for="label1">
+                                            <i class="fas fa-check-circle me-1 text-success"></i>Label = 1
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attack Data Table Container -->
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div id="attackdata-list-div"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message Bar -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-danger alert-dismissible fade show" id="errorMessage" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorText"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Attack Pattern Modal -->
+    <div class="modal fade" id="addnewattackform" tabindex="-1" aria-labelledby="addAttackModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title d-flex align-items-center" id="addAttackModalLabel">
+                        <img src="/public/kirahi-logo.png" alt="Kirahi Logo" class="me-2" style="width: 36px; height: 36px; object-fit: contain;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Add New Attack Pattern
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <form id="addAttackForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="attacktypeinput" class="form-label">
+                                <i class="fas fa-bug me-1"></i>Attack Type
+                            </label>
+                            <select class="form-control" id="attacktypeinput" required>
+                                <option value="">Select Attack Type</option>
+                                <option value="dos">Denial of Service</option>
+                                <option value="injection">Message Injection</option>
+                                <option value="replay">Replay Attack</option>
+                                <option value="spoofing">Spoofing</option>
+                                <option value="flooding">Flooding</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <div id="attacktypeerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="canidinput" class="form-label">
+                                <i class="fas fa-hashtag me-1"></i>CAN ID
+                            </label>
+                            <input type="text" class="form-control" id="canidinput" required>
+                            <div id="caniderrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="attackpatterninput" class="form-label">
+                                <i class="fas fa-code me-1"></i>Attack Pattern
+                            </label>
+                            <input type="text" class="form-control" id="attackpatterninput" required>
+                            <div id="attackpatternerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="severityinput" class="form-label">
+                                <i class="fas fa-exclamation-circle me-1"></i>Severity
+                            </label>
+                            <select class="form-control" id="severityinput" required>
+                                <option value="">Select Severity</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                            <div id="severityerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="timestampinput" class="form-label">
+                                <i class="fas fa-clock me-1"></i>Detection Timestamp
+                            </label>
+                            <input type="datetime-local" class="form-control" id="timestampinput" required>
+                            <div id="timestamperrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sourceinput" class="form-label">
+                                <i class="fas fa-map-marker-alt me-1"></i>Source
+                            </label>
+                            <input type="text" class="form-control" id="sourceinput" required>
+                            <div id="sourceerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descriptioninput" class="form-label">
+                                <i class="fas fa-comment me-1"></i>Description
+                            </label>
+                            <textarea class="form-control" id="descriptioninput" rows="3"></textarea>
+                            <div id="descriptionerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="suppressionactioninput" class="form-label">
+                                <i class="fas fa-shield-alt me-1"></i>Suppression Action
+                            </label>
+                            <select class="form-control" id="suppressionactioninput" required>
+                                <option value="">Select Action</option>
+                                <option value="block">Block</option>
+                                <option value="alert">Alert Only</option>
+                                <option value="log">Log Only</option>
+                                <option value="quarantine">Quarantine</option>
+                            </select>
+                            <div id="suppressionactionerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div id="modal-error" class="alert alert-danger" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-save me-2"></i>Save Attack Pattern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Application Scripts -->
+    <script type="module" src="/js/attackmgmtapp.mjs"></script>
+    <script type="module">
+        import { 
+            handleFormSubmission, 
+            displayfiltereditems, 
+            displayallitems 
+        } from '/js/attackmgmtapp.mjs';
+        
+        // Add new attack pattern form submission
+        document.getElementById('addAttackForm').addEventListener("submit", (e) => {
+            e.preventDefault();
+            handleFormSubmission();
+        });
+        
+        // Search form submission
+        document.getElementById('searchform').addEventListener("submit", (e) => {
+            e.preventDefault();
+            const searchText = document.getElementById('searchtext').value;
+            if (searchText.trim()) {
+                displayfiltereditems(searchText);
+            } else {
+                displayallitems();
+            }
+        });
+        
+        // Clear search button
+        document.getElementById('clearSearch').addEventListener("click", (e) => {
+            e.preventDefault();
+            document.getElementById('searchtext').value = '';
+            displayallitems();
+        });
+        
+        // Export CSV button
+        document.getElementById('exportCsv').addEventListener("click", (e) => {
+            e.preventDefault();
+            // TODO: Implement CSV export functionality
+            alert('CSV export functionality will be implemented');
+        });
+        
+        // Initialize the application by displaying all records in the db for the table
+        displayallitems();
+        
+        // Load database info
+        fetch('/api/database-info')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('databaseName').textContent = data.name;
+            })
+            .catch(error => {
+                console.error('Error loading database info:', error);
+            });
+    </script>
+</body>
+</html>

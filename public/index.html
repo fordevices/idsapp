@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2025, Kirahi LLC
+Max Seenisamy kirahi.com
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Detection System (IDS)</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/public/kirahi-logo.png">
+    
+    <!-- Bootstrap CSS do not reach out to the internet-->
+    <link rel="stylesheet" href="/assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <!-- FontAwesome  do not reach out to the internet -->
+    <link rel="stylesheet" href="/assets/fontawesome-free-6.7.2-web/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="/public/kirahi-logo.png" alt="Kirahi Logo" class="me-2" style="width: 48px; height: 48px; object-fit: contain;">
+                <i class="fas fa-shield-alt me-2"></i>
+                Intrusion Detection System
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <i class="fas fa-shield-alt me-1"></i>Normal CAN Data
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/suppress.html">
+                            <i class="fas fa-ban me-1"></i>Suppress CAN Attack Data
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Database Connection Status -->
+                <div class="navbar-text me-3">
+                    <span class="badge bg-success" id="databaseInfo">
+                        <i class="fas fa-database me-1"></i>Connected to: <span id="databaseName">Loading...</span>
+                    </span>
+                </div>
+                
+                <!-- Search Form -->
+                <form class="d-flex" id="searchform">
+                    <div class="input-group">
+                        <input class="form-control" type="search" id="searchtext" placeholder="Search CAN data..." aria-label="Search">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="btn btn-outline-light" type="button" id="clearSearch" title="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid" style="margin-top: 80px; padding-top: 20px;">
+        <div class="row">
+            <div class="col-12">
+                <!-- Add New Item Button and Label Filter -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Normal CAN Data
+                    </h4>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-primary" id="exportCsv" title="Export to CSV">
+                            <i class="fas fa-download me-2"></i>Export CSV
+                        </button>
+                        <button class="btn btn-success" id="addNew">
+                            <i class="fas fa-plus me-2"></i>Add New CAN Data
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Label Filter Radio Buttons -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body py-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="me-3 fw-bold">
+                                        <i class="fas fa-filter me-1"></i>Label Filter:
+                                    </span>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="labelFilter" id="labelBoth" value="both" checked>
+                                        <label class="form-check-label" for="labelBoth">
+                                            <i class="fas fa-list me-1"></i>Both (0 & 1)
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="labelFilter" id="label0" value="0">
+                                        <label class="form-check-label" for="label0">
+                                            <i class="fas fa-times-circle me-1 text-danger"></i>Label = 0
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="labelFilter" id="label1" value="1">
+                                        <label class="form-check-label" for="label1">
+                                            <i class="fas fa-check-circle me-1 text-success"></i>Label = 1
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CAN Data Table Container -->
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div id="candata-list-div"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message Bar -->
+    <div id="page-error" class="alert alert-danger alert-dismissible fade position-fixed bottom-0 start-0 w-100 m-0" role="alert" style="display: none; z-index: 1050;">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="error-message"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New CAN Data Modal -->
+    <div class="modal fade" id="addnewcanform" tabindex="-1" aria-labelledby="addCANModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title d-flex align-items-center" id="addCANModalLabel">
+                        <img src="/public/kirahi-logo.png" alt="Kirahi Logo" class="me-2" style="width: 36px; height: 36px; object-fit: contain;">
+                        <i class="fas fa-plus-circle me-2"></i>Add New CAN Data
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <form id="addCANForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="canidinput" class="form-label">
+                                <i class="fas fa-hashtag me-1"></i>CAN ID
+                            </label>
+                            <input type="text" class="form-control" id="canidinput" required>
+                            <div id="caniderrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="candatainput" class="form-label">
+                                <i class="fas fa-microchip me-1"></i>CAN Data
+                            </label>
+                            <input type="text" class="form-control" id="candatainput" required>
+                            <div id="candataerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="timestampinput" class="form-label">
+                                <i class="fas fa-clock me-1"></i>Timestamp
+                            </label>
+                            <input type="datetime-local" class="form-control" id="timestampinput" required>
+                            <div id="timestamperrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="datalengthinput" class="form-label">
+                                <i class="fas fa-ruler me-1"></i>Data Length
+                            </label>
+                            <input type="number" class="form-control" id="datalengthinput" min="0" max="8" required>
+                            <div id="datalengtherrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="priorityinput" class="form-label">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Priority
+                            </label>
+                            <select class="form-control" id="priorityinput" required>
+                                <option value="">Select Priority</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                            <div id="priorityerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sourceinput" class="form-label">
+                                <i class="fas fa-map-marker-alt me-1"></i>Source
+                            </label>
+                            <input type="text" class="form-control" id="sourceinput" required>
+                            <div id="sourceerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descriptioninput" class="form-label">
+                                <i class="fas fa-comment me-1"></i>Description
+                            </label>
+                            <textarea class="form-control" id="descriptioninput" rows="3"></textarea>
+                            <div id="descriptionerrormsg" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div id="modal-error" class="alert alert-danger" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Application Scripts -->
+    <script type="module" src="/js/canmgmtapp.mjs"></script>
+    <script type="module">
+        import { 
+            handleFormSubmission, 
+            displayfiltereditems, 
+            displayallitems 
+        } from '/js/canmgmtapp.mjs';
+        
+         // Add new CAN data form submission
+         document.getElementById('addCANForm').addEventListener("submit", (e) => {
+            e.preventDefault();
+            handleFormSubmission();
+        });
+        
+        // Search form submission
+        document.getElementById('searchform').addEventListener("submit", (e) => {
+            e.preventDefault();
+            displayfiltereditems();
+        });
+
+        // Error message handling
+        const errorAlert = document.getElementById('page-error');
+        const errorMessage = document.getElementById('error-message');
+        
+        // Function to show error message
+        window.showError = function(message) {
+            errorMessage.textContent = message;
+            errorAlert.style.display = 'block';
+            errorAlert.classList.add('show');
+        };
+        
+        // Function to hide error message
+        window.hideError = function() {
+            errorAlert.classList.remove('show');
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 300);
+        };
+        
+        // Auto-hide error after 5 seconds
+        errorAlert.addEventListener('shown.bs.alert', function() {
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        });
+
+        // Application initialization is now handled in canmgmtapp.mjs DOMContentLoaded event
+        
+    </script>
+</body>
+</html>
