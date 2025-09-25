@@ -12,48 +12,47 @@ A comprehensive intrusion detection system designed for analyzing and managing C
 - **Modern Bootstrap 5.3.8 Interface**: Responsive, mobile-friendly design
 - **FontAwesome 6.7.2 Icons**: Professional iconography throughout the interface
 - **Dual-Page System**: Separate interfaces for normal CAN data and attack pattern management
+- **Label Filtering**: Radio button controls to filter by Label = 0, Label = 1, or Both
 - **Real-time Search**: Instant search and filtering capabilities with clear search functionality
 - **Export to CSV**: Download data in CSV format with proper formatting
 
 ### 🛠️ Technical Features
 - **Generic REST API**: Works with any table structure without hardcoding
-- **Dynamic Field Type Inference**: Automatically detects field types (hex, datetime, select, textarea)
+- **Dynamic Field Type Inference**: Automatically detects field types (hex, datetime, select, textarea, number)
+- **Label-Based Filtering**: Server-side filtering by Label field with pagination support
+- **Memory Management**: Proper state management for filtered data and pagination
 - **Client-side & Server-side Validation**: Comprehensive data validation
 - **Graceful Server Shutdown**: Proper resource cleanup and session management
 - **Error Handling**: Robust error handling with user-friendly messages
 
 ## Database Schema
 
-The system uses two main tables:
+The system uses two main tables for CAN bus data analysis:
 
 ### Normal CAN Data Table (`normalCAN`)
-- **id** - Primary key (auto-increment)
-- **canid** - CAN message ID (hex format)
-- **candata** - CAN message data (hex format)
-- **timestamp** - Message timestamp
-- **datalength** - Data length (0-8 bytes)
-- **priority** - Message priority (low, medium, high, critical)
-- **source** - Message source identifier
-- **description** - Optional description
-- **createdon** - Creation date
-- **createdtime** - Creation time
-- **updatedon** - Last update date
-- **updatedtime** - Last update time
+- **Label** - Data classification label (INTEGER: 0 = normal, 1 = attack)
+- **Time** - Timestamp of the CAN message (REAL: Unix timestamp with milliseconds)
+- **ID** - CAN message identifier (TEXT: CAN ID in hex format)
+- **Signal1_of_ID** - First signal value for this CAN ID (REAL: normalized signal value)
+- **Signal2_of_ID** - Second signal value for this CAN ID (REAL: normalized signal value)
+- **Signal3_of_ID** - Third signal value for this CAN ID (INTEGER: discrete signal value)
+- **Signal4_of_ID** - Fourth signal value for this CAN ID (REAL: normalized signal value)
 
 ### Suppress CAN Attack Data Table (`suppressCANattack`)
-- **id** - Primary key (auto-increment)
-- **attacktype** - Type of attack (dos, injection, replay, spoofing, flooding, other)
-- **canid** - CAN message ID (hex format)
-- **attackpattern** - Attack pattern (hex format)
-- **severity** - Attack severity (low, medium, high, critical)
-- **timestamp** - Detection timestamp
-- **source** - Attack source identifier
-- **description** - Attack description
-- **suppressionaction** - Suppression action (block, alert, log, quarantine)
-- **createdon** - Creation date
-- **createdtime** - Creation time
-- **updatedon** - Last update date
-- **updatedtime** - Last update time
+- **Label** - Data classification label (INTEGER: 0 = normal, 1 = attack)
+- **Time** - Timestamp of the CAN message (REAL: Unix timestamp with milliseconds)
+- **ID** - CAN message identifier (TEXT: CAN ID in hex format)
+- **Signal1_of_ID** - First signal value for this CAN ID (REAL: normalized signal value)
+- **Signal2_of_ID** - Second signal value for this CAN ID (INTEGER: discrete signal value)
+- **Signal3_of_ID** - Third signal value for this CAN ID (INTEGER: discrete signal value)
+- **Signal4_of_ID** - Fourth signal value for this CAN ID (REAL: normalized signal value)
+
+### Data Characteristics
+- **Label Field**: Used for filtering and classification (0 = normal traffic, 1 = attack patterns)
+- **Time Field**: High-precision timestamps for temporal analysis
+- **ID Field**: CAN message identifiers in hexadecimal format
+- **Signal Fields**: Multiple signal values per CAN ID for comprehensive analysis
+- **Data Volume**: Large datasets with millions of records for machine learning analysis
 
 ## Prerequisites
 
@@ -109,24 +108,29 @@ SERVER_PORT=9008
 ## Application Pages
 
 ### Normal CAN Data Page (`/`)
-- View all normal CAN bus messages
+- View all normal CAN bus messages with label filtering
+- Filter by Label = 0, Label = 1, or Both using radio buttons
 - Add new CAN data entries
-- Edit existing CAN data
+- Edit existing CAN data (maintains filter context)
 - Search and filter CAN messages
 - Export data to CSV
+- Paginated display with 25 rows per page
 
 ### Suppress CAN Attack Data Page (`/suppress.html`)
-- View all attack patterns
+- View all attack patterns with label filtering
+- Filter by Label = 0, Label = 1, or Both using radio buttons
 - Add new attack patterns
-- Edit existing attack patterns
+- Edit existing attack patterns (maintains filter context)
 - Configure suppression actions
 - Search and filter attack data
 - Export attack data to CSV
+- Paginated display with 25 rows per page
 
 ## API Endpoints
 
 ### Data Management
 - `GET /api/:table` - Fetch all rows from a table
+- `GET /api/:table?limit=25&offset=0&label=0` - Fetch paginated rows with optional label filtering
 - `GET /api/:table/:id` - Fetch a specific row by ID
 - `POST /api/:table` - Create a new row
 - `PUT /api/:table/:id` - Update an existing row
@@ -135,6 +139,9 @@ SERVER_PORT=9008
 
 ### Search & Filtering
 - `GET /api/:table/search?q=query` - Search within table data
+- `GET /api/:table?label=0` - Filter by Label = 0 (normal traffic)
+- `GET /api/:table?label=1` - Filter by Label = 1 (attack patterns)
+- `GET /api/:table` - Show both Label = 0 and Label = 1 (default)
 
 ## Security Features
 
