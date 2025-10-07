@@ -53,4 +53,6 @@ How to Compute F1 Score
 		○ Binary/multi-class averaging: 'binary', 'micro', 'macro', 'weighted'.
 		○ Thresholding: For probabilistic predictions, apply a custom threshold to binarize.
 
+During training, you can set eval_metric='aucpr' (for precision-recall AUC, related to F1) or use cross-validation with custom metrics, but for direct F1, post-prediction calculation is standard and flexible.
+
 SEE THE EXAMPLE CODE FOR F1 SCORE => python/xgboost_f1score.py
